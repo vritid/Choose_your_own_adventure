@@ -1,4 +1,4 @@
-"""CSC111 Project 1: Text Adventure Game - Game Entities
+"""Game Entities
 
 Instructions (READ THIS FIRST!)
 ===============================
@@ -8,7 +8,6 @@ Copyright and Usage Information
 All rights reserved. You may not use, modify, or distribute this code without written permission from the author.
 
 This file is Copyright (c) 2025 Vriti Dahiya
-"""
 """
 from dataclasses import dataclass
 import random
