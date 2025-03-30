@@ -1,0 +1,228 @@
+"""CSC111 Project 1: Text Adventure Game - Game Entities
+
+Instructions (READ THIS FIRST!)
+===============================
+
+This Python module contains the entity classes for Project 1, to be imported and used by
+ the `adventure` module.
+ Please consult the project handout for instructions and details.
+
+Copyright and Usage Information
+===============================
+
+This file is provided solely for the personal and private use of students
+taking CSC111 at the University of Toronto St. George campus. All forms of
+distribution of this code, whether as given or with any changes, are
+expressly prohibited. For more information on copyright for CSC111 materials,
+please consult our Course Syllabus.
+
+This file is Copyright (c) 2025 CSC111 Teaching Team
+"""
+from dataclasses import dataclass
+import random
+
+
+@dataclass
+class Location:
+    """A location in our text adventure game world.
+
+    Instance Attributes:
+        - id_num: integer id for this location
+        - brief_description: brief description of this location
+        - long_description: long description of this location
+        - inspect_text: text that only become available when 'look' command is used
+        - available_commands: a mapping of available commands at this location to
+                                the location executing that command would lead to
+        - items: list of the names of the items at this location
+        - visited_examined_list: List of whether this location has been visited or examined yet
+
+    Representation Invariants:
+    """
+
+    # This is just a suggested starter class for Location.
+    # You may change/add parameters and the data available for each Location object as you see fit.
+    #
+    # The only thing you must NOT change is the name of this class: Location.
+    # All locations in your game MUST be represented as an instance of this class.
+
+    id_num: int
+    brief_description: str
+    long_description: str
+    inspect_text: str
+    available_commands: dict[str, int]
+    items: list[str]
+    visited_examined_list: list[int]
+
+    def __init__(self, location_id: int, description: list[str],
+                 available_commands: dict[str, int], items: list[str]) -> None:
+        """Initialize a new location.
+        """
+
+        self.id_num = location_id
+        self.brief_description = description[0]
+        self.long_description = description[1]
+        self.inspect_text = description[2]
+        self.available_commands = available_commands
+        self.items = items
+        self.visited_examined_list = [False, False]
+
+
+@dataclass
+class Item:
+    """An item in our text adventure game world.
+
+    Instance Attributes:
+        - name: name of item
+        - description: description of item
+        - start_position: id of the place the item starts at
+        - target_position: id of the place item is supposed to end up
+        - target_points: points given by item
+        - weight: weight of an item
+
+    Representation Invariants:
+        - weight >= 0
+        - name != ""
+        - description != ""
+    """
+
+    # NOTES:
+    # This is just a suggested starter class for Item.
+    # You may change these parameters and the data available for each Item object as you see fit.
+    # (The current parameters correspond to the example in the handout).
+    #
+    # The only thing you must NOT change is the name of this class: Item.
+    # All item objects in your game MUST be represented as an instance of this class.
+
+    name: str
+    description: str
+    start_position: int
+    target_position: int
+    target_points: int
+    weight: float
+
+
+class SlidingTilePuzzle:
+    """A sliding tile puzzle in our adventure game world.
+
+    Instance Attributes:
+        - puzzle: A list of lists of integers tha represents the game board layout
+        - blank_pos: A tuple that represents the blank space in the puzzle
+        - moves: An integer representing how many moves have been made by the player
+
+    Representation Invariants:
+        - self.moves >= 0
+        - self.puzzle != []
+        - sum(sum(sublist) for sublist in self.puzzle) = 36
+    """
+    puzzle: list[list[int]]
+    blank_pos: tuple
+    moves: int
+
+    def __init__(self) -> None:
+        """Initialize the puzzle with a random configuration."""
+        # A 3x3 puzzle with 8 numbered tiles (1 to 8) and 1 empty space (represented by 0)
+        self.puzzle = [[1, 2, 3],
+                       [4, 5, 6],
+                       [7, 8, 0]]  # 0 is the blank space
+        self.blank_pos = (2, 2)  # Initially, the blank space is in the bottom-right corner
+        self.moves = 0  # Track the number of moves
+
+    def print_puzzle(self) -> None:
+        """Display the puzzle grid in a text-based format."""
+        for row in self.puzzle:
+            print(" ".join(str(x) if x != 0 else " " for x in row))
+        print(f"Moves: {self.moves}")
+
+    def flatten(self, nested_list: int | list) -> list[int]:
+        """Return a (non-nested) list of the integers in nested_list.
+        The integers are returned in the left-to-right order they appear in
+        nested_list.
+        """
+        if isinstance(nested_list, int):
+            return [nested_list]
+        else:
+            result_so_far = []
+        for sublist in nested_list:
+            result_so_far.extend(self.flatten(sublist))
+        return result_so_far
+
+    def solvable(self, puzzle_list: int | list) -> bool:
+        """
+        Check whether a 3x3 sliding puzzle is solvable.
+        Checks the number of "inversions". If this is odd then the puzzle configuration is not solvable.
+        An inversion is when two tiles are in the wrong order.
+        """
+        count = 0
+        for i in range(8):
+            for j in range(i + 1, 9):
+                if puzzle_list[j] and puzzle_list[i] and puzzle_list[i] > puzzle_list[j]:
+                    count += 1
+        return count % 2 == 0
+
+    def is_solved(self) -> bool:
+        """Check if the puzzle is solved (tiles are in order)."""
+        solved_puzzle = [[1, 2, 3],
+                         [4, 5, 6],
+                         [7, 8, 0]]
+        return self.puzzle == solved_puzzle
+
+    def shuffle(self) -> None:
+        """Shuffle the puzzle to create a random configuration."""
+        moves = ['up', 'down', 'left', 'right']
+        for _ in range(100):
+            move = random.choice(moves)
+            self.move_blank(move)
+
+    def move_blank(self, direction: str) -> None:
+        """Move the blank space in the given direction if possible.
+        If the direction is not possible, nothing moves.
+        """
+        i, j = self.blank_pos
+        if direction == 'up' and i > 0:
+            self.puzzle[i][j], self.puzzle[i - 1][j] = self.puzzle[i - 1][j], self.puzzle[i][j]
+            self.blank_pos = (i - 1, j)
+        elif direction == 'down' and i < 2:
+            self.puzzle[i][j], self.puzzle[i + 1][j] = self.puzzle[i + 1][j], self.puzzle[i][j]
+            self.blank_pos = (i + 1, j)
+        elif direction == 'left' and j > 0:
+            self.puzzle[i][j], self.puzzle[i][j - 1] = self.puzzle[i][j - 1], self.puzzle[i][j]
+            self.blank_pos = (i, j - 1)
+        elif direction == 'right' and j < 2:
+            self.puzzle[i][j], self.puzzle[i][j + 1] = self.puzzle[i][j + 1], self.puzzle[i][j]
+            self.blank_pos = (i, j + 1)
+        self.moves += 1
+
+    def play(self) -> None:
+        """Main game loop for playing the sliding tile puzzle."""
+        print("Welcome to the Sliding Tile Puzzle!")
+        self.shuffle()
+        while not self.solvable(self.flatten(self.puzzle)):
+            self.shuffle()
+        self.moves = 0
+        while not self.is_solved():
+            self.print_puzzle()
+            move = input("Enter your move (up, down, left, right): ").lower().strip()
+            if move in ['up', 'down', 'left', 'right']:
+                self.move_blank(move)
+            elif move == "chirly":
+                break
+            else:
+                print("Invalid move. Please enter a valid direction.")
+        self.print_puzzle()
+        print("After shuffling its pieces around, you were finally able to fix your lucky uoft mug.")
+
+
+# Note: Other entities you may want to add, depending on your game plan:
+# - Puzzle class to represent special locations (could inherit from Location class if it seems suitable)
+# - Player class
+# etc.
+
+if __name__ == "__main__":
+    # When you are ready to check your work with python_ta, uncomment the following lines.
+    # (Delete the "#" and space before each line.)
+    # IMPORTANT: keep this code indented inside the "if __name__ == '__main__'" block
+    import python_ta
+    python_ta.check_all(config={
+        'max-line-length': 120,
+        'disable': ['R1705', 'E9998', 'E9999']
+    })
