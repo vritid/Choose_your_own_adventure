@@ -1,0 +1,208 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amsthm}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=0.75in]{geometry}
+
+\title{CSC111 Winter 2025 Project 1}
+\author{Vriti Dahiya, Anvi Singh}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section*{Running the game}
+We should be able to run your game by simply running \texttt{adventure.py}. If you have any other requirements (e.g., installing certain modules), describe them here. Otherwise, skip this section.
+\section*{Game Map}
+Example game map below (edit it to show your actual game map):
+
+\begin{verbatim}
+ 9 10 11 -1
+ 5  6  7  8
+ 2  3  4 -1
+ 1 -1 -1 -1
+\end{verbatim}
+Starting location is: 1
+\section*{Game solution}
+\textbf{List of commands:} ["go north", "go east", "look", "pick up", "laptop charger", "go west", "go north", "look", "pick up", "lucky uoft mug", "go east", "go east", "look", "pick up", "large rock", "go north", "drop", "large rock", "drop", "laptop charger", "go west", "go west", "look", "pick up", "line 1 sign", "go east", "go east", "drop", "line 1 sign", "look", "pick up", "usb drive", "pick up", "laptop charger", "go south", "go east", "drop", "laptop charger", "drop", "lucky uoft mug", "drop", "usb drive", "chirly"]\\
+
+In general, the available commands are:
+\begin{itemize}
+    \item \textbf{Navigation}: ``go [north, east, south, west]'' - Moving between locations using predefined locations in "available\_commands".
+    \item \textbf{Inventory Management}:\\
+    - ``pick up'': Pick up an item from current location (followed by item name to specify what item to pick up). A player must first look at a location to be able to pick up items from it.\\
+    - ``drop'': Drop an item from the inventory (followed by item name to specify what item to drop)\\
+    - ``inventory'': View all current items in inventory. Also displays the total weight of items in inventory.
+    \item \textbf{Game Progression}: \\
+    - ``score'': Check current score\\
+    - ``look'': Inspect the current location. A player must first look at a location to be able to pick up items from it.\\
+    - ``undo'': Undo the last action\\
+    - ``log'': View event log\\
+    - ``quit'': Exit the game\\
+    - ``chirly'': Quick finish the final randomized puzzle
+
+\end{itemize}
+
+
+\section*{Lose condition(s)}
+\textbf{Description of how to lose the game:} \\
+    This game is based on collecting the three items specificed in the handout and reaching a certain location (our dorm room, location ID 8) within a limited number of moves. Each action the player takes, such as moving/picking up/dropping items, decreases the overall move limit. \textbf{If the move limit reaches 0 before the win conditions are met, the game ends}, and the player receives a message indicating that they missed the submission deadline and failed. \\
+
+
+\textbf{List of commands:} ["go north", "go south"] * 16 (Move limit is 32)
+
+Other ways to lose: A combination of the below commands, without getting all three items and dropping them at location ID 8 (``look'' is not logged as an event, but is a prerequisite for ``pick up'').
+\begin{itemize}
+    \item ``look''
+    \item ``go [north, east, south, west]''
+    \item ``pick up''
+    \item ``drop'' \\
+\end{itemize}
+
+\textbf{Which parts of your code are involved in this functionality:}
+Where ``game'' is an AdventureGame() object:
+\begin{itemize}
+    \item game.move\_limit\_score\_list[0] -= 1 (when an event is logged)
+    \item while game.ongoing and game.move\_limit\_score\_list[0] \(>\)= 0
+    \item if game.check\_victory(location) -\> determines if the player wins
+\end{itemize}
+
+
+% Copy-paste the above if you have multiple lose conditions and describe each possible way to lose the game
+
+\section*{Inventory}
+
+\textbf{All location IDs that involve items in the game:\\}
+\begin{enumerate}
+    \item \textbf{Bahen 1F (ID: 1)} – Contains the item ``toonie''
+    \item \textbf{McLennan Physical Laboratories 3F (ID: 2)} – Contains the item ``abandoned textbook''
+    \item \textbf{Kings College Circle (ID: 3)} - Contains the item ``laptop charger"
+    \item \textbf{Robarts Library (ID: 5)} - Contains the item ``lucky uoft mug''
+    \item \textbf{Queens Park (ID: 7)} - Contains the item ``large rock''
+    \item \textbf{St. George Station (ID: 9)} - Contains the item ``line 1 sign''
+    \item \textbf{Royal Ontario Museum (ID: 11)} - Contains the item ``usb drive''\\
+\end{enumerate}
+
+\textbf{Item data:}
+\begin{enumerate}
+    \item For Item 1:
+    \begin{itemize}
+    \item Item name: ``usb drive"
+    \item Item start location ID: 11
+    \item Item target location ID: 8
+    \end{itemize}
+        \item For Item 2:
+    \begin{itemize}
+    \item Item name: ``lucky uoft mug"
+    \item Item start location ID: 5
+    \item Item target location ID: 8
+    \end{itemize}
+        \item For Item 3:
+    \begin{itemize}
+    \item Item name: ``laptop charger"
+    \item Item start location ID: 3
+    \item Item target location ID: 8
+    \end{itemize}
+    \item For Item 4:
+        \begin{itemize}
+    \item Item name: ``abandoned textbook"
+    \item Item start location ID: 2
+    \item Item target location ID: 8
+    \end{itemize}
+     \item For Item 5:
+    \begin{itemize}
+    \item Item name: ``toonie"
+    \item Item start location ID: 1
+    \item Item target location ID: 8
+    \end{itemize}
+     \item For Item 6:
+    \begin{itemize}
+    \item Item name: ``line 1 sign"
+    \item Item start location ID: 9
+    \item Item target location ID: 11\\
+    \end{itemize}
+    % Copy-paste the above if you have more items, to list ALL items
+\end{enumerate}
+
+\textbf{Exact command(s) that should be used to pick up an item (choose any one item for this example), and the command(s) used to use/drop the item (can copy the list you assigned to \texttt{inventory\_demo} in the \texttt{project1\_simulation.py} file)
+Which parts of your code (file, class, function/method) are involved in handling the \texttt{inventory} command: \\}
+To pick up or drop an item like the ``toonie," the player would enter commands like ``look", ``pick up", ``toonie" or ``drop", ``toonie". These actions are handled within methods in the AdventureGame class. The ``pick\_up()" method checks if the location has been examined and if so, displays available items at the location and allows the players to pick one and add it to their inventory. The ``drop\_item()" method removes the item from the player's inventory and places it back at the current location.
+
+\section*{Score}
+
+\textbf{Briefly describe the way players can earn scores in your game. Include the first location in which they can increase their score, and the exact list of command(s) leading up to the score increase:}\\
+    Players earn scores by picking up items that are scattered throughout the game. Each item has a specific ``target\_points" value that is added to the player's score when they collect it. The first location where players can increase their score is Bahen 1F with location ID 1, where they can find a toonie to pick up. To increase their score, players must use the ``look" command to examine the area, and then the ``pick up" command, followed by the item name (in this case ``toonie") to collect the item and earn points.\\
+
+
+    \textbf{Copy the list you assigned to \texttt{scores\_demo} in the \texttt{project1\_simulation.py} file into this section of the report:}\\
+
+    ["look", "pick up", "toonie", "score"]\\
+
+   \textbf{ Which parts of your code (file, class, function/method) are involved in handling the \texttt{score} functionality:}
+   \begin{itemize}
+       \item ``AdventureGame" class: Tracks the score and inventory
+       \item ``pick\_up": Updates score when an item is collected
+       \item ``score" command: Calls game.move\_limit\_score\_list[1] and displays current score
+   \end{itemize}
+
+\section*{Enhancements}
+\begin{itemize}
+    \item \textbf{Enhancement 1} \\\\
+       \textbf{ Brief description of what the enhancement is (if it's a puzzle, also describe what steps the player must take to solve it):\\\\}
+        The Sliding Tile Puzzle is a 3x3 grid with 8 numbered tiles from 1-8 and one blank space. The objective is to rearrange the tiles by sliding them until they are in numerical order from left to right, top to bottom (i.e. from 1 to 8, 1-3 in the top row, 4-6 in the middle row, and 7-8 in the bottom row plus the blank in the bottom right corner). The player can move the blank space up, down, left, or right, swapping the number in that spot with the blank space. The game continues until the puzzle is solved. After each move, the game displays the current puzzle configuration and the number of moves made. This puzzle was implemented at the very end of the game as a sort of final cutscene/puzzle to wrap up the story. For the sake of proj1\_simulation, "chirly" is the 'cheat code' to instantly finish the sliding tile puzzle. \\
+
+       \textbf{Complexity level (choose from low/medium/high):} High \\
+
+       \textbf{ Reasons you believe this is the complexity level (e.g., mention implementation details, how much code did you have to add/change from the baseline, what challenges did you face, etc.):}\\\\
+       Implementing this sliding puzzle had a high complexity level due to several factors. First, the puzzle’s logic involves not only moving tiles but also ensuring the puzzle is solvable, which required the implementation of an algorithm to do inversion checks and handle shuffling logic. Additionally, handling user input in a way that provides clear feedback on the game condition while maintaining an intuitive interface added to the complexity. The code also needed to track the number of moves and dynamically update the puzzle state with each move. Lastly, ensuring that the puzzle can reset itself, handle invalid inputs, and provide a smooth experience required a fair amount of effort in managing state and game flow.
+\subsection{\textbf{Parts of the code:}}
+
+   Class: SlidingTilePuzzle \\\\
+   Methods:
+   \item \_\_init\_\_(self) - None
+   \item print\_puzzle(self) - None
+   \item flatten(self, nested\_list: list[list[int]]) - list[int]
+   \item solvable(self, puzzle\_list: list[list[int]]) - bool
+   \item is\_solved(self) - bool
+   \item shuffle(self) - None
+   \item move\_blank(self, direction: str) - None
+   \item play(self) - None\\
+
+     Instance Attributes:
+   \item self.puzzle - Puzzle grid configuration
+   \item self.blank\_pos - Blank space position
+   \item self.moves - Move history\\
+
+
+    \textbf{Enhancement 2} \\
+    \begin{itemize}
+        \textbf{Brief description of what the enhancement is (if it’s a puzzle, also describe what steps the player must take to solve it):}\\\\
+
+The second enhancement implemented is weighted items, inventory, and a puzzle. Each item has an assigned weight, and the player can only carry so much weight, so the inventory is limited. The puzzle involves collecting heavy items from multiple locations and dropping them off at a certain location to "prop open the door" so the player can enter and examine the inside for items. The weight required to open the door is more than the inventory weight limit, so the player must make multiple trips and find multiple heavy objects to solve the puzzle.\\\\
+
+         \textbf{Complexity level (low/medium/high):} Medium\\\\
+
+         \textbf{Reasons you believe this is the complexity level (e.g., mention implementation details):}\\
+
+         We thought this enhancement was medium difficulty because it involved changing the data for all items, changing the pick\_up() function, and creating new methods to get the weight of items at a location or to prevent the player from using other commands unless the requirements are met. So although the specifics of the implementation were not too difficult, the widespread nature of the enhancement involved changing many parts of the game, which was a lot for us to keep track of. As well, implementing the puzzle involved changing available commands at the puzzle location, checking for it to be solved, and designing a puzzle that would have players make multiple trips and explore the map but still be doable, so there was an aspect of plain puzzle design and logic as well.
+    \end{itemize}
+    \subsection{\textbf{Parts of the code:}}
+
+   Associated Class: Item \\\\
+     Associated Instance Attributes:
+\item weight: float (assoc. with Item)
+\item inventory: list[Item] (assoc. with AdventureGame but stores Items) \\\\
+Related Methods:
+\item \_\_init\_\_(self) - None (for Item)
+\item total\_inventory\_weight(self) - float (in AdventureGame, returns total weight in inventory)
+\item total\_weight(self, loc: Location) - float (in AdventureGame, returns total weight at a location)
+\item pick\_up(self, loc: Location) - None (in AdventureGame, checks item weight against inventory weight using total\_inventory\_weight before picking up)
+\end{itemize}
+
+\section*{Additional Notes}
+\begin{itemize}
+    \item In 'proj1\_simulation', the final command in the win walkthrough is "chirly" - since the sliding tile puzzle is randomized each time, we can't give a walkthrough for this portion without using a "cheat code" so to speak, which is "chirly". If the game is played directly, the sliding tile puzzle can be tried.
+    \item In 'proj1\_simulation', we did not include any enhancement demos - this was a purposeful choice because the weight enhancement is used extensively to win the game (the player must collect as many items as they can up to their weight limit, drop them at location id 11, and then leave to gather more items to drop at location id 11 to progress the game), so we felt there could not be a more extensive demo of this enhancement. As for the sliding tile enhancement, this cannot be accurately demo'ed as discussed in the previous point
+\end{itemize}
+\end{document}
