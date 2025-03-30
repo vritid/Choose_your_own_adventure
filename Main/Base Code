@@ -1,0 +1,386 @@
+"""Text Adventure Game - Game Manager
+
+Instructions (READ THIS FIRST!)
+===============================
+Copyright and Usage Information
+===============================
+
+All rights reserved. You may not use, modify, or distribute this code without written permission from the author.
+
+===============================
+This file is Copyright (c) 2025 Vriti Dahiya
+"""
+from __future__ import annotations
+import json
+from typing import Optional
+
+from assignments.starter.project1.game_entities import SlidingTilePuzzle
+from game_entities import Location, Item
+from proj1_event_logger import Event, EventList
+
+class AdventureGame:
+    """A text adventure game class storing all location, item and map data.
+
+    Instance Attributes:
+        - _locations: Available Locations in the game
+        - _items: Available Items in the game
+        - current_location_id: The ID of the current location
+        - move_limit_score_list: A list representing the amount of moves allowed to be made before losing and score
+        gained so far by picking up items
+        - max_weight: The maximum weight of items a player can have in inventory
+        - inventory: A list of Items in the inventory
+        - ongoing: A boolean representing whether the game is ongoing
+
+    Representation Invariants:
+        - move_limit > 0
+        - score >= 0
+        - max_weight >= 0
+        - not item in inventory or item in _items
+    """
+
+    # Private Instance Attributes (do NOT remove these two attributes):
+    #   - _locations: a mapping from location id to Location object.
+    #                       This represents all the locations in the game.
+    #   - _items: a list of Item objects, representing all items in the game.
+
+    _locations: dict[int, Location]
+    _items: list[Item]
+    current_location_id: int  # Suggested attribute, can be removed
+    move_limit_score_list: list[int]
+    max_weight: float
+    inventory: list[Item] = None
+    ongoing: bool  # Suggested attribute, can be removed
+
+    def __init__(self, game_data_file: str, initial_location_id: int) -> None:
+        """
+        Initialize a new text adventure game, based on the data in the given file, setting starting location of game
+        at the given initial location ID.
+        (note: you are allowed to modify the format of the file as you see fit)
+
+        Preconditions:
+        - game_data_file is the filename of a valid game data JSON file
+        """
+
+        # NOTES:
+        # You may add parameters/attributes/methods to this class as you see fit.
+
+        # Requirements:
+        # 1. Make sure the Location class is used to represent each location.
+        # 2. Make sure the Item class is used to represent each item.
+
+        # Suggested helper method (you can remove and load these differently if you wish to do so):
+        self._locations, self._items = self._load_game_data(game_data_file)
+
+        # Suggested attributes (you can remove and track these differently if you wish to do so):
+        self.current_location_id = initial_location_id  # game begins at this location
+        self.move_limit_score_list = [32, 0]
+        self.max_weight = 11.0
+        self.inventory = []
+        self.ongoing = True  # whether the game is ongoing
+
+    @staticmethod
+    def _load_game_data(filename: str) -> tuple[dict[int, Location], list[Item]]:
+        """Load locations and items from a JSON file with the given filename and
+        return a tuple consisting of (1) a dictionary of locations mapping each game location's ID to a Location object,
+        and (2) a list of all Item objects."""
+
+        with open(filename, 'r') as f:
+            data = json.load(f)  # This loads all the data from the JSON file
+
+        locations = {}
+        for loc_data in data['locations']:  # Go through each element associated with the 'locations' key in the file
+            location_obj = Location(loc_data['id'], [loc_data['brief_description'], loc_data['long_description'],
+                                    loc_data['inspect_text']], loc_data['available_commands'], loc_data['items'])
+            locations[loc_data['id']] = location_obj
+
+        items = []
+        for item_data in data['items']:  # Go through each element associated with the 'items' key in the file
+            item = Item(item_data['name'], item_data['description'], item_data['start_position'],
+                        item_data['target_position'], item_data['target_points'], item_data['weight'])
+            items.append(item)
+
+        return locations, items
+
+    def get_location(self, loc_id: Optional[int] = None) -> Location:
+        """Return Location object associated with the provided location ID.
+        If no ID is provided, return the Location object associated with the current location.
+        """
+        if loc_id is None:
+            return self._locations[self.current_location_id]
+        return self._locations[loc_id]
+
+    def check_victory(self, loc: Location) -> bool:
+        """ Return whether the usb drive, lucky uoft mug, and laptop charger are in the p
+        """
+        return ("usb drive" in loc.items and "lucky uoft mug" in loc.items and "laptop charger" in
+                loc.items and loc.id_num == 8)
+
+    def get_item_by_name(self, name: str) -> Optional[Item]:
+        """Return the Item object with the given name, or None if it does not exist."""
+        for item in self._items:
+            if item.name == name:
+                return item
+        return None
+
+    def pick_up(self, loc: Location) -> None:
+        """Mutate the player's inventory and location available items to add an item to inventory
+        and remove it from the location"""
+        if loc.visited_examined_list[1]:
+            print("Available items:", loc.items)
+
+            picked_item = input("\nPick an item: ")
+            while picked_item not in location.items:
+                picked_item = input("\nInvalid item. Pick an item: ")
+
+            item = self.get_item_by_name(picked_item)
+            current_weight = sum(it.weight for it in self.inventory)
+            if current_weight + item.weight <= self.max_weight:
+                self.inventory.append(item)
+                self.move_limit_score_list[1] += item.target_points
+                location.items.remove(picked_item)
+                print(f"You picked up {item.name}. (Weight: {item.weight})")
+                ev = Event(game.current_location_id, picked_item,
+                           None)
+                game_log.add_event(ev, "pick up")
+                game.move_limit_score_list[0] -= 1
+            else:
+                print("You are carrying too much weight!")
+
+        else:
+            print("You don't know what items are in this room yet. Have you looked around to see what you can find?")
+
+    def drop_item(self, item_name: str) -> None:
+        """Drop an item from inventory."""
+        for item in self.inventory:
+            if not item.name.lower() == item_name.lower():
+                print("You don't have that item.")
+            else:
+                self.inventory.remove(item)
+                self.get_location().items.append(item.name)
+                print(f"You dropped a {item.name} here.")
+                ev = Event(game.current_location_id, item_name,
+                           None)
+                game_log.add_event(ev, "drop")
+                game.move_limit_score_list[0] -= 1
+
+    def total_weight(self, loc: Location) -> float:
+        """Return the total weight of items at the location."""
+        return sum(self.get_item_by_name(item).weight for item in loc.items)
+
+    def total_inventory_weight(self) -> float:
+        """Return the total weight of items in the player's inventory."""
+        return sum(item.weight for item in self.inventory)
+
+    def check_access_condition(self, loc: Location) -> bool:
+        """Return whether the player can access the normal menu at this location."""
+        required_weight = 12.5  # Change this to whatever weight limit you want
+        current_weight = self.total_weight(loc)
+
+        # If the location weight is greater than or equal to required weight
+        if current_weight >= required_weight:
+            return True
+        else:
+            return False
+
+    def undo_last_action(self, events_log: EventList) -> None:
+        """Undo the last action and restore the previous game state."""
+        print("Undoing the last move...")
+        if events_log.is_empty():
+            print("No moves to undo.")
+            return
+        last_event = events_log.last
+        second_last_event = last_event.prev
+        if second_last_event.next_command is not None:
+            self.current_location_id = second_last_event.id_num if second_last_event else 1
+            print(f"Moved back to location: {self.get_location().id_num}")
+
+            # Reverse item actions
+            if second_last_event.next_command == "pick up":
+                item_name = last_event.description
+                if self.get_item_by_name(item_name) in self.inventory:
+                    self.inventory.remove(self.get_item_by_name(item_name))
+                    self.get_location().items.append(item_name)
+                    self.move_limit_score_list[1] -= self.get_item_by_name(item_name).target_points
+                    print(f"Undo: Dropped {item_name}.")
+            elif second_last_event.next_command == "drop":
+                item_name = last_event.description
+                if item_name in self.get_location().items:
+                    self.get_location().items.remove(item_name)
+                    self.inventory.append(self.get_item_by_name(item_name))
+                    self.move_limit_score_list[1] += self.get_item_by_name(item_name).target_points
+                    print(f"Undo: Picked up {item_name}.")
+
+            # Restore move count
+            self.move_limit_score_list[0] += 1
+            print(second_last_event)
+            print(f"Move added back. Remaining moves: {self.move_limit_score_list[0]}")
+
+            game_log.remove_last_event()
+        else:
+            print("No valid moves to undo.")
+
+
+if __name__ == "__main__":
+
+    # When you are ready to check your work with python_ta, uncomment the following lines.
+    # (Delete the "#" and space before each line.)
+    # IMPORTANT: keep this code indented inside the "if __name__ == '__main__'" block
+    import python_ta
+
+    python_ta.check_all(config={
+        'max-line-length': 120,
+        'disable': ['R1705', 'E9998', 'E9999']
+    })
+
+    game_log = EventList()  # This is REQUIRED as one of the baseline requirements
+    game = AdventureGame('game_data.json', 1)  # load data, setting initial location ID to 1
+    choice = None
+    menu = ["look", "inventory", "score", "undo", "log", "drop", "quit"]
+    # Regular menu options available at each location
+
+    init_loc = game.get_location()
+    first_event = Event(game.current_location_id, init_loc.long_description)
+    game_log.add_event(first_event)
+    # Note: You may modify the code below as needed; the following starter code is just a suggestion
+    print("You and your friend spent the entire day yesterday finishing up your first-year CS project, and it's turned"
+          " out brilliantly! You worked in various places throughout campus, moving from the library to a quiet corner"
+          " in the coffee shop, and even worked on it during your lectures (instead of paying attention to your"
+          " professors). The deadline is at 4pm today, and all that’s left is fixing a few PythonTA errors, and"
+          " proofreading your written report, before submission. Your friend has a couple of lectures to attend today,"
+          " but you assure them—\"Don't worry, I got this.\" Sleep-deprived but determined, you settle down at your"
+          " desk in your dorm room to power through the final fixes. You have a few hours until 4pm, so you decide to"
+          " rest your eyes for a little while before you get started. Just a quick, little nap..."
+          "A while later, you wake up in a panic. You still have some time left (phew), but in your sleep-deprived"
+          " state you didn't realize that you are missing some key items (and you can't remember where you last saw"
+          " them)! Your USB drive (the only copy of your game, because of course you forgot to back it up), your"
+          " laptop charger (your battery was at 5% when you sat down), and—worst of all—your lucky UofT mug."
+          " This isn’t just any mug—it's the one that’s been with you through every late-night study session,"
+          " every major deadline, and every all-nighter. You can't possibly submit without it! The deadline is"
+          " creeping closer, and your friend is counting on you. Can you track down your missing items and save"
+          " your project grade (and your friendship!) before it's too late?")
+    print()
+    print("You have a limited number of moves (moving location, picking up and dropping items) that you can make,"
+          " and you can only carry items under the weight limit of ", game.max_weight)
+    print("To win the game, gather the three required items and drop them at your dorm room in Elmsley College (SMC)")
+    while game.ongoing and game.move_limit_score_list[0] > 0:
+        # Note: If the loop body is getting too long, you should split the body up into helper functions
+        # for better organization. Part of your marks will be based on how well-organized your code is.
+
+        location = game.get_location()
+
+        if game.check_access_condition(location) and location.id_num == 11 and not location.visited_examined_list[1]:
+            menu = ["look", "inventory", "score", "undo", "log", "drop", "quit"]
+            event = Event(game.current_location_id, "Unlocked ROM")
+            game_log.add_event(event, "drop")
+            game.move_limit_score_list[0] -= 1
+
+        if not location.visited_examined_list[0] and not location.visited_examined_list[1] and "pick up" in menu:
+            menu.remove("pick up")
+
+        if not choice == "look":
+            if location.visited_examined_list[0]:
+                print("Location ID:", location.id_num)
+                print(location.brief_description)
+            else:
+                print("Location ID:", location.id_num)
+                print(location.long_description)
+                location.visited_examined_list[0] = True
+
+        # Display possible actions at this location
+        print("Moves left:", game.move_limit_score_list[0])
+        print("What to do? Choose from:", menu)
+        print("At this location, you can also:")
+        for action in location.available_commands:
+            print("-", action)
+
+        # Validate choice
+        choice = input("\nEnter action: ").lower().strip()
+        while choice not in location.available_commands and choice not in menu:
+            print("That was an invalid option; try again.")
+            choice = input("\nEnter action: ").lower().strip()
+
+        print("========")
+        print("You decided to:", choice)
+
+        if choice in menu:
+            if choice == "log":
+                game_log.display_events()
+            elif choice == "inventory":
+                inventory_item_names = [item.name for item in game.inventory]
+                print("Inventory is:", inventory_item_names)
+                print("Inventory weight is:", game.total_inventory_weight())
+                print("Max weight you can carry is:", game.max_weight)
+            elif choice == "score":
+                print("Score is", game.move_limit_score_list[1])
+            elif choice == "undo":
+                game.undo_last_action(game_log)
+            elif choice == "look":
+                print(location.long_description)
+                print(location.inspect_text)
+                if not location.visited_examined_list[1]:
+                    location.visited_examined_list[1] = True
+                if not location.items == []:
+                    print("You found: ", location.items)
+                    menu.append("pick up")
+                else:
+                    print("Seems theres nothing else here.")
+            elif choice == "pick up":
+                if not location.items == []:
+                    game.pick_up(location)
+                else:
+                    print("Seems theres nothing else here.")
+            elif choice == "drop":
+                if game.inventory:
+                    inventory_item_names = [item.name for item in game.inventory]
+                    print("Inventory is:", inventory_item_names)
+                    item_to_drop = input("What item would you like to drop? ")
+                    game.drop_item(item_to_drop)
+                else:
+                    print("You currently have no items.")
+            elif choice == "quit":
+                print("Exiting the game...")
+                game.ongoing = False
+            # ENTER YOUR CODE BELOW to handle other menu commands (remember to use helper functions as appropriate)
+        else:
+            # Handle non-menu actions
+            if choice in location.available_commands:
+                result = location.available_commands[choice]
+                if result == 11:
+                    if not game.check_access_condition(game.get_location()):
+                        print("You arrive at the ROM, but something is strange... the door to the entrance just can't"
+                              " seem to stay open!")
+                        print("You need to drop some items to prop the door open and access this location.")
+                        print("Drop items with a total weight of 12.0")
+                        menu = ["drop"]  # Options only for dropping items or moving backwards
+                    else:
+                        menu = ["look", "inventory", "score", "undo", "log", "drop", "quit"]
+                if result != 11:
+                    menu = ["look", "inventory", "score", "undo", "log", "drop", "quit"]
+                game.current_location_id = result
+                event = Event(game.current_location_id, location.brief_description,
+                              None)
+                game_log.add_event(event, choice)
+                game.move_limit_score_list[0] -= 1
+            else:
+                print(f"Invalid action '{choice}', please choose again.")
+
+        if game.check_victory(location):
+            print("You have successfully gathered all the items needed to submit your assignment!")
+            print("However, as you're running up the stairs to your dorm...")
+            print("You trip and smack the floor (with everyone watching)! And worse yet...-")
+            print("Your lucky UofT mug goes flying and shatters against the weight of your negligence (i.e. the floor)"
+                  "into 8 clean pieces.")
+            print("But you still have time. You'll repair your companion and submit this assignment, or you won't"
+                  " submit it at all. And you've come too far to fail here. Now hurry!")
+            repair_mug = SlidingTilePuzzle()
+            repair_mug.play()
+            print("Armed with all the items you need, you're finally able to sit down at your desk, plug in your"
+                  " laptop, and submit your assignment, with your lucky uoft mug in hand.")
+            print("Congratulations! You beat the game!")
+            print("Points: " + str(game.move_limit_score_list[1]))
+            game.ongoing = False
+        elif game.move_limit_score_list[0] <= 0:
+            print(
+                "Unfortunately, time is up :( The submission deadline has passed without you finding the items you"
+                " need, and you've recieved an automatic zero :(. But fear not, you can try again!")
+            game.ongoing = False
